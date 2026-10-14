@@ -16,9 +16,9 @@ export const StatsOverview = ({ products = [] }) => {
     products.map((p) => p.category?.trim()).filter(Boolean)
   ).size;
 
-  const formattedValue = new Intl.NumberFormat('es-MX', {
+  const formattedValue = new Intl.NumberFormat('es-GT', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'GTQ',
   }).format(totalInventoryValue);
 
   return (

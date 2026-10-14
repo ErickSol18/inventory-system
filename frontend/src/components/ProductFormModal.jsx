@@ -209,10 +209,10 @@ export const ProductFormModal = ({
             {/* Price */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Precio (USD) <span className="text-rose-500">*</span>
+                Precio (Quetzales - Q) <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-2.5 text-slate-400 text-sm">$</span>
+                <span className="absolute left-3.5 top-2.5 text-slate-400 text-sm font-semibold">Q</span>
                 <input
                   type="number"
                   step="0.01"
