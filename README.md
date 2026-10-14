@@ -165,7 +165,7 @@ Una vez levantados los contenedores, los servicios están disponibles en las sig
 | **Backend REST API** | [http://localhost:8080/api/products](http://localhost:8080/api/products) | Endpoint base para el consumo de productos |
 | **Documentación Swagger** | [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) | Interfaz interactiva OpenAPI 3 para probar la API |
 | **Especificación OpenAPI JSON** | [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs) | Esquema formal de contratos REST en formato JSON |
-| **PostgreSQL Database** | `localhost:5432` | Servidor relacional (DB: `inventory_db`, User: `postgres`) |
+| **PostgreSQL Database** | `localhost:5433` (externo/host) | Servidor relacional (DB: `inventory_db`, User: `postgres`) |
 
 ---
 
