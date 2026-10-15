@@ -1,15 +1,10 @@
-import axios from 'axios';
+import httpClient from './httpClient';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000,
-});
-
+/**
+ * Product Service - Encapsulates API interactions for inventory products.
+ * Uses centralized HttpClient to ensure DRY principles, centralized interceptors,
+ * and unified error normalization across all requests.
+ */
 export const productService = {
   /**
    * Fetch all products with optional filters
@@ -17,7 +12,7 @@ export const productService = {
    * @param {string} [category]
    * @returns {Promise<Array>}
    */
-  async getAll(search = '', category = '') {
+  getAll(search = '', category = '') {
     const params = {};
     if (search && search.trim() !== '') {
       params.search = search.trim();
@@ -25,8 +20,7 @@ export const productService = {
     if (category && category !== 'ALL') {
       params.category = category;
     }
-    const response = await apiClient.get('/products', { params });
-    return response.data;
+    return httpClient.get('/products', { params });
   },
 
   /**
@@ -34,9 +28,8 @@ export const productService = {
    * @param {number|string} id
    * @returns {Promise<Object>}
    */
-  async getById(id) {
-    const response = await apiClient.get(`/products/${id}`);
-    return response.data;
+  getById(id) {
+    return httpClient.get(`/products/${id}`);
   },
 
   /**
@@ -44,9 +37,8 @@ export const productService = {
    * @param {Object} productData
    * @returns {Promise<Object>}
    */
-  async create(productData) {
-    const response = await apiClient.post('/products', productData);
-    return response.data;
+  create(productData) {
+    return httpClient.post('/products', productData);
   },
 
   /**
@@ -55,9 +47,8 @@ export const productService = {
    * @param {Object} productData
    * @returns {Promise<Object>}
    */
-  async update(id, productData) {
-    const response = await apiClient.put(`/products/${id}`, productData);
-    return response.data;
+  update(id, productData) {
+    return httpClient.put(`/products/${id}`, productData);
   },
 
   /**
@@ -65,8 +56,8 @@ export const productService = {
    * @param {number|string} id
    * @returns {Promise<void>}
    */
-  async delete(id) {
-    await apiClient.delete(`/products/${id}`);
+  delete(id) {
+    return httpClient.delete(`/products/${id}`);
   },
 };
 

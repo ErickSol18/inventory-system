@@ -85,11 +85,12 @@ export function App() {
       fetchProducts();
     } catch (error) {
       console.error('Error saving product:', error);
-      if (error.response?.data?.validationErrors) {
-        setServerErrors(error.response.data.validationErrors);
+      const valErrors = error.validationErrors || error.response?.data?.validationErrors;
+      if (valErrors) {
+        setServerErrors(valErrors);
         showToast('Por favor corrija los campos marcados.', 'error');
       } else {
-        const msg = error.response?.data?.message || 'Error inesperado al guardar el producto.';
+        const msg = error.message || error.response?.data?.message || 'Error inesperado al guardar el producto.';
         showToast(msg, 'error');
       }
     } finally {
@@ -108,7 +109,7 @@ export function App() {
       fetchProducts();
     } catch (error) {
       console.error('Error deleting product:', error);
-      const msg = error.response?.data?.message || 'Error al eliminar el producto.';
+      const msg = error.message || error.response?.data?.message || 'Error al eliminar el producto.';
       showToast(msg, 'error');
     } finally {
       setIsDeleting(false);
