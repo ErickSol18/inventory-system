@@ -1,19 +1,32 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import Navbar from './components/Navbar';
 import StatsOverview from './components/StatsOverview';
 import ProductTable from './components/ProductTable';
 import ProductFormModal from './components/ProductFormModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import AlertToast from './components/AlertToast';
-import productService from './services/productService';
+import useProducts from './hooks/useProducts';
+import useToast from './hooks/useToast';
 
 export function App() {
-  const [products, setProducts] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const { toast, showSuccess, showError, hideToast } = useToast();
 
-  // Modal states
+  const {
+    products,
+    isLoading,
+    searchTerm,
+    setSearchTerm,
+    selectedCategory,
+    setSelectedCategory,
+    categories,
+    metrics,
+    reload,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+  } = useProducts({ onError: showError });
+
+  // Modal UI State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,94 +36,45 @@ export function App() {
   const [deletingProduct, setDeletingProduct] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Toast feedback state
-  const [toast, setToast] = useState(null);
-
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-  };
-
-  // Fetch products from backend REST API
-  const fetchProducts = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await productService.getAll(searchTerm, selectedCategory);
-      setProducts(data);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      showToast(
-        'No se pudo conectar con el servidor backend. Verifique que el servicio esté activo.',
-        'error'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [searchTerm, selectedCategory]);
-
-  useEffect(() => {
-    // Debounce search slightly to avoid excessive calls
-    const timeout = setTimeout(() => {
-      fetchProducts();
-    }, 250);
-
-    return () => clearTimeout(timeout);
-  }, [fetchProducts]);
-
-  // Extract unique categories for filter dropdown
-  const uniqueCategories = Array.from(
-    new Set(
-      products
-        .map((p) => p.category?.trim())
-        .filter(Boolean)
-    )
-  ).sort();
-
-  // Create or Update handler
+  // Form Submission Handler
   const handleFormSubmit = async (formData) => {
     setIsSubmitting(true);
     setServerErrors({});
-
     try {
       if (editingProduct?.id) {
-        // Update product
-        const updated = await productService.update(editingProduct.id, formData);
-        showToast(`Producto "${updated.name}" actualizado exitosamente.`);
+        const updated = await updateProduct(editingProduct.id, formData);
+        showSuccess(`Producto "${updated.name}" actualizado exitosamente.`);
       } else {
-        // Create product
-        const created = await productService.create(formData);
-        showToast(`Producto "${created.name}" registrado exitosamente.`);
+        const created = await createProduct(formData);
+        showSuccess(`Producto "${created.name}" registrado exitosamente.`);
       }
       setIsFormOpen(false);
       setEditingProduct(null);
-      fetchProducts();
     } catch (error) {
       console.error('Error saving product:', error);
       const valErrors = error.validationErrors || error.response?.data?.validationErrors;
       if (valErrors) {
         setServerErrors(valErrors);
-        showToast('Por favor corrija los campos marcados.', 'error');
+        showError('Por favor corrija los campos marcados.');
       } else {
-        const msg = error.message || error.response?.data?.message || 'Error inesperado al guardar el producto.';
-        showToast(msg, 'error');
+        showError(error.message || 'Error inesperado al guardar el producto.');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Delete product handler
+  // Deletion Confirmation Handler
   const handleDeleteConfirm = async (id) => {
     setIsDeleting(true);
     try {
-      await productService.delete(id);
-      showToast('Producto eliminado exitosamente del inventario.');
+      await deleteProduct(id);
+      showSuccess('Producto eliminado exitosamente del inventario.');
       setIsDeleteOpen(false);
       setDeletingProduct(null);
-      fetchProducts();
     } catch (error) {
       console.error('Error deleting product:', error);
-      const msg = error.message || error.response?.data?.message || 'Error al eliminar el producto.';
-      showToast(msg, 'error');
+      showError(error.message || 'Error al eliminar el producto.');
     } finally {
       setIsDeleting(false);
     }
@@ -138,22 +102,19 @@ export function App() {
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Heading */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              Catálogo de Inventario
-            </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              Administración centralizada de productos, existencias y precios en tiempo real.
-            </p>
-          </div>
+        <div className="mb-6">
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+            Catálogo de Inventario
+          </h2>
+          <p className="text-sm text-slate-500 mt-1">
+            Administración centralizada de productos, existencias y precios en tiempo real.
+          </p>
         </div>
 
-        {/* Top KPIs Summary */}
-        <StatsOverview products={products} />
+        {/* Live Metrics Summary */}
+        <StatsOverview metrics={metrics} />
 
-        {/* Main Product Table / CRUD View */}
+        {/* Product Table View */}
         <ProductTable
           products={products}
           isLoading={isLoading}
@@ -161,15 +122,14 @@ export function App() {
           onSearchChange={setSearchTerm}
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
-          categories={uniqueCategories}
+          categories={categories}
           onAddNew={handleOpenCreate}
           onEdit={handleOpenEdit}
           onDelete={handleOpenDelete}
-          onRefresh={fetchProducts}
+          onRefresh={reload}
         />
       </main>
 
-      {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-6 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500">
           <p>
@@ -182,7 +142,7 @@ export function App() {
         </div>
       </footer>
 
-      {/* Modals and Toasts */}
+      {/* Modals & Feedback */}
       <ProductFormModal
         isOpen={isFormOpen}
         onClose={() => {
@@ -206,7 +166,7 @@ export function App() {
         isDeleting={isDeleting}
       />
 
-      <AlertToast toast={toast} onClose={() => setToast(null)} />
+      <AlertToast toast={toast} onClose={hideToast} />
     </div>
   );
 }

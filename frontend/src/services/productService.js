@@ -1,18 +1,18 @@
 import httpClient from './httpClient';
+import Product from '../models/Product';
 
 /**
- * Product Service - Encapsulates API interactions for inventory products.
- * Uses centralized HttpClient to ensure DRY principles, centralized interceptors,
- * and unified error normalization across all requests.
+ * Product Service - Encapsulates REST API interactions for inventory products.
+ * Uses centralized HttpClient and deserializes responses into Product domain model instances.
  */
 export const productService = {
   /**
    * Fetch all products with optional filters
    * @param {string} [search]
    * @param {string} [category]
-   * @returns {Promise<Array>}
+   * @returns {Promise<Array<Product>>}
    */
-  getAll(search = '', category = '') {
+  async getAll(search = '', category = '') {
     const params = {};
     if (search && search.trim() !== '') {
       params.search = search.trim();
@@ -20,35 +20,41 @@ export const productService = {
     if (category && category !== 'ALL') {
       params.category = category;
     }
-    return httpClient.get('/products', { params });
+    const data = await httpClient.get('/products', { params });
+    return Array.isArray(data) ? data.map(Product.fromApi) : [];
   },
 
   /**
    * Fetch a single product by ID
    * @param {number|string} id
-   * @returns {Promise<Object>}
+   * @returns {Promise<Product>}
    */
-  getById(id) {
-    return httpClient.get(`/products/${id}`);
+  async getById(id) {
+    const data = await httpClient.get(`/products/${id}`);
+    return Product.fromApi(data);
   },
 
   /**
    * Create a new product
    * @param {Object} productData
-   * @returns {Promise<Object>}
+   * @returns {Promise<Product>}
    */
-  create(productData) {
-    return httpClient.post('/products', productData);
+  async create(productData) {
+    const payload = productData instanceof Product ? productData.toPayload() : productData;
+    const data = await httpClient.post('/products', payload);
+    return Product.fromApi(data);
   },
 
   /**
    * Update an existing product
    * @param {number|string} id
    * @param {Object} productData
-   * @returns {Promise<Object>}
+   * @returns {Promise<Product>}
    */
-  update(id, productData) {
-    return httpClient.put(`/products/${id}`, productData);
+  async update(id, productData) {
+    const payload = productData instanceof Product ? productData.toPayload() : productData;
+    const data = await httpClient.put(`/products/${id}`, payload);
+    return Product.fromApi(data);
   },
 
   /**

@@ -1,25 +1,32 @@
 import React from 'react';
 import { Package, DollarSign, AlertTriangle, Tag } from 'lucide-react';
+import { CURRENCY_CONFIG } from '../constants/inventory';
 
-export const StatsOverview = ({ products = [] }) => {
-  const totalProducts = products.length;
+export const StatsOverview = ({ metrics = null, products = [] }) => {
+  const totalProducts = metrics ? metrics.total : products.length;
 
-  const totalInventoryValue = products.reduce((acc, curr) => {
-    const price = parseFloat(curr.price) || 0;
-    const stock = parseInt(curr.stock, 10) || 0;
-    return acc + price * stock;
-  }, 0);
+  const totalValue = metrics
+    ? metrics.value
+    : products.reduce((acc, p) => {
+        return acc + (typeof p.totalValue === 'function' ? p.totalValue() : (Number(p.price) || 0) * (Number(p.stock) || 0));
+      }, 0);
 
-  const lowStockCount = products.filter((p) => (p.stock || 0) <= 5).length;
+  const lowStockCount = metrics
+    ? metrics.lowStock
+    : products.filter((p) => {
+        return typeof p.isLowStock === 'function'
+          ? (p.isLowStock() || p.isOutOfStock())
+          : (Number(p.stock) || 0) <= 5;
+      }).length;
 
-  const uniqueCategories = new Set(
-    products.map((p) => p.category?.trim()).filter(Boolean)
-  ).size;
+  const categoriesCount = metrics
+    ? metrics.categoriesCount
+    : new Set(products.map((p) => p.category?.trim()).filter(Boolean)).size;
 
-  const formattedValue = new Intl.NumberFormat('es-GT', {
+  const formattedValue = new Intl.NumberFormat(CURRENCY_CONFIG.locale, {
     style: 'currency',
-    currency: 'GTQ',
-  }).format(totalInventoryValue);
+    currency: CURRENCY_CONFIG.currency,
+  }).format(totalValue);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -68,7 +75,7 @@ export const StatsOverview = ({ products = [] }) => {
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
             Categorías Activas
           </p>
-          <p className="text-2xl font-bold text-purple-600 mt-1">{uniqueCategories}</p>
+          <p className="text-2xl font-bold text-purple-600 mt-1">{categoriesCount}</p>
         </div>
         <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
           <Tag className="w-6 h-6" />

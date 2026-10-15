@@ -8,6 +8,7 @@ import {
   Filter,
   RefreshCw,
 } from 'lucide-react';
+import { CURRENCY_CONFIG, LOW_STOCK_THRESHOLD } from '../constants/inventory';
 
 export const ProductTable = ({
   products = [],
@@ -23,30 +24,33 @@ export const ProductTable = ({
   onRefresh,
 }) => {
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-GT', {
+    return new Intl.NumberFormat(CURRENCY_CONFIG.locale, {
       style: 'currency',
-      currency: 'GTQ',
+      currency: CURRENCY_CONFIG.currency,
     }).format(amount || 0);
   };
 
-  const getStockBadge = (stock) => {
-    if (stock <= 0) {
+  const getStockBadge = (product) => {
+    const isOut = typeof product.isOutOfStock === 'function' ? product.isOutOfStock() : product.stock <= 0;
+    const isLow = typeof product.isLowStock === 'function' ? product.isLowStock() : (product.stock > 0 && product.stock <= LOW_STOCK_THRESHOLD);
+
+    if (isOut) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">
           Agotado (0)
         </span>
       );
     }
-    if (stock <= 5) {
+    if (isLow) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-          Bajo ({stock})
+          Bajo ({product.stock})
         </span>
       );
     }
     return (
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-        Disponible ({stock})
+        Disponible ({product.stock})
       </span>
     );
   };
@@ -186,12 +190,12 @@ export const ProductTable = ({
 
                   {/* Price */}
                   <td className="py-4 px-4 font-semibold text-slate-800">
-                    {formatCurrency(product.price)}
+                    {typeof product.formattedPrice === 'function' ? product.formattedPrice() : formatCurrency(product.price)}
                   </td>
 
                   {/* Stock */}
                   <td className="py-4 px-4">
-                    {getStockBadge(product.stock)}
+                    {getStockBadge(product)}
                   </td>
 
                   {/* Actions */}

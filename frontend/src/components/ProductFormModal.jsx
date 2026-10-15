@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, AlertCircle, Loader2 } from 'lucide-react';
-
-const COMMON_CATEGORIES = [
-  'Electrónica',
-  'Ropa',
-  'Alimentos',
-  'Hogar',
-  'Deportes',
-  'Oficina',
-  'Otros',
-];
+import { DEFAULT_CATEGORIES, CURRENCY_CONFIG } from '../constants/inventory';
 
 export const ProductFormModal = ({
   isOpen,
@@ -283,7 +274,7 @@ export const ProductFormModal = ({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
               />
               <datalist id="category-suggestions">
-                {COMMON_CATEGORIES.map((cat) => (
+                {DEFAULT_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat} />
                 ))}
               </datalist>
