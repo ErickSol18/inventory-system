@@ -34,6 +34,7 @@ El proyecto implementa una arquitectura en capas desacoplada con separación est
 ```text
 Inventory-system/
 ├── docker-compose.yml              # Orquestación de servicios (Database, Backend, Frontend)
+├── .env.example                    # Plantilla de variables de entorno (puertos, credenciales)
 ├── README.md                       # Documentación principal de la solución
 ├── .gitignore                      # Exclusiones de control de versiones
 │
@@ -87,13 +88,21 @@ Inventory-system/
     ├── index.html
     └── src/
         ├── main.jsx                # Punto de entrada React
-        ├── App.jsx                 # Estado principal y orquestación visual
+        ├── App.jsx                 # Orquestación declarativa de la interfaz
         ├── index.css               # Estilos globales y utilidades Tailwind
+        ├── constants/
+        │   └── inventory.js        # Umbrales de stock, categorías y configuración de moneda (GTQ)
+        ├── hooks/                  # Custom Hooks con lógica desacoplada
+        │   ├── useProducts.js      # Estado de productos, debounce, métricas y operaciones CRUD
+        │   └── useToast.js         # Gestión de notificaciones y feedback al usuario
+        ├── models/
+        │   └── Product.js          # Modelo de dominio OOP con validaciones y formateo
         ├── services/
-        │   └── productService.js   # Cliente HTTP Axios para la API REST
+        │   ├── httpClient.js       # Cliente HTTP centralizado (Axios + Interceptores + Adaptador)
+        │   └── productService.js   # Servicio de dominio para consumo de API REST
         └── components/
             ├── Navbar.jsx          # Barra superior institucional
-            ├── StatsOverview.jsx   # Métricas y KPIs en tiempo real
+            ├── StatsOverview.jsx   # Métricas y KPIs en tiempo real (Quetzales)
             ├── ProductTable.jsx    # Tabla reactiva con búsqueda y filtros
             ├── ProductFormModal.jsx# Formulario Crear/Editar con validación visual
             ├── DeleteConfirmModal.jsx # Confirmación de seguridad previa a eliminación
@@ -221,12 +230,16 @@ Cuando un campo no cumple las reglas de negocio (ej. precio negativo o nombre en
 6. **Documentación Swagger / OpenAPI 3:** Integrada mediante `springdoc-openapi-starter-webmvc-ui`, facilitando la prueba inmediata de los endpoints sin requerir herramientas externas como Postman.
 
 ### Frontend (React + Vite + Tailwind CSS)
-1. **Presentación en Español con Código en Inglés:** Nombres de componentes y funciones en inglés (`ProductTable`, `productService`, etc.), mientras que la interfaz gráfica, etiquetas, modales y mensajes para el usuario final se presentan en español.
-2. **Validación Visual en Tiempo Real:** El formulario valida los datos tanto al escribir (`onChange`) como al desenfocar (`onBlur`), mostrando alertas visuales en rojo cuando un campo obligatorio no cumple las reglas.
-3. **Confirmación de Seguridad en Eliminación:** Modal de confirmación para prevenir borrados accidentales, mostrando el nombre del producto involucrado.
-4. **Feedback Inmediato:** Notificaciones tipo Toast para confirmar la creación, actualización y eliminación de registros, así como alertas amigables en caso de errores de red o validación del servidor.
-5. **Diseño Responsivo:** Adaptado a pantallas de escritorio, tablets y dispositivos móviles mediante Tailwind CSS.
-6. **Métricas en Vivo:** Tarjetas KPI que calculan automáticamente el total de productos, valor monetario del inventario, alertas de stock bajo y diversidad de categorías.
+1. **Separación de Responsabilidades y Arquitectura por Capas:** El estado y la lógica de negocio se extrajeron de `App.jsx` hacia Custom Hooks especializados (`useProducts`, `useToast`), manteniendo la vista puramente declarativa y desacoplada de la infraestructura de red.
+2. **Cliente HTTP Centralizado (Patrón Fachada / Adaptador):** Implementación de `httpClient.js` sobre Axios con interceptores que desempaquetan automáticamente `response.data` y normalizan de manera uniforme los errores de red, timeouts y validaciones del backend (`validationErrors`).
+3. **Modelo de Dominio Orientado a Objetos (`models/Product.js`):** En lugar de manipular objetos planos anónimos, se diseñó la clase de dominio `Product` con contratos JSDoc y métodos de negocio encapsulados (`isLowStock()`, `isOutOfStock()`, `formattedPrice()`, `totalValue()`, `toPayload()`).
+4. **Localización Monetaria en Quetzales de Guatemala (GTQ / Q):** Todos los precios y métricas financieras se formatean utilizando la API nativa `Intl.NumberFormat('es-GT', { style: 'currency', currency: 'GTQ' })`, asegurando la presentación estándar nacional (`Q 1,599.99`).
+5. **Optimización de Rendimiento con Debounce y Memoización:** La búsqueda en tiempo real aplica un debounce de 250 ms para evitar ráfagas innecesarias de peticiones al backend, y los KPIs del catálogo se calculan eficientemente con `useMemo`.
+6. **Constantes Centralizadas (`constants/inventory.js`):** Unificación de umbrales de stock, categorías sugeridas y configuración de internacionalización en un único punto de verdad.
+7. **Presentación en Español con Código en Inglés:** Identificadores, métodos y clases en inglés según estándares universales, con interfaz de usuario, etiquetas y alertas 100% en español.
+8. **Validación Visual en Tiempo Real:** El formulario valida los datos tanto al escribir (`onChange`) como al desenfocar (`onBlur`), mostrando alertas visuales en rojo cuando un campo no cumple las restricciones.
+9. **Confirmación de Seguridad y Feedback Inmediato:** Modal de confirmación para prevenir borrados accidentales y notificaciones tipo Toast para confirmar creaciones, ediciones, bajas y errores del servidor.
+10. **Diseño Responsivo con Tailwind CSS:** Adaptado a pantallas de escritorio, tablets y dispositivos móviles con métricas en vivo.
 
 ### Base de Datos & Contenedores
 1. **Persistencia Garantizada:** El volumen Docker `postgres_data` conserva los datos incluso tras reiniciar o reconstruir los contenedores.
